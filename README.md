@@ -5,21 +5,22 @@ This plug-in delivers an interface for Qt Quick developers for accessing the
 APIs of Mobile Backend as a Service providers that allow creating mobile applications powered
 by cloud services.
 
-The plug-in is hosted at:
-- 
 
 The main features of the plug-in are:
-- 
 
-The plug-in also contains some simple examples.
+ - users related function (login/logout/register/delete user)
+ - a QML model for showing content
+
+ 
+
+The plug-in has a simple example.
+
 
 The plug-in can be used as a pre-compiled shared library or you can copy the
 source code into your project and compile it with your application. Although
 the plug-in has been designed to be used with QML UI applications, it can also be
 used as-is with Qt C++.
 
-For more information on the implementation and usage, visit the wiki pages:
-- 
 
 
 1. Prerequisites
@@ -27,6 +28,7 @@ For more information on the implementation and usage, visit the wiki pages:
 
  - Qt basics
  - Qt Quick basics
+ - Parse server installed - see [project details](https://github.com/ParsePlatform/parse-server)
 
 
 2. Project structure
@@ -35,10 +37,10 @@ For more information on the implementation and usage, visit the wiki pages:
  |                  The root folder contains the project file, the license
  |                  information, and this file (release notes).
  |
- |- doc             Contains documentation on the project in general.
+ |- doc             Contains documentation on the project in general (not yet actually).
  |
  |- examples        Contains a set of example applications that utilise the
- |                  plug-in.
+ |                  plug-in.(only one sample for now)
  |
  |- plugin          Root folder of the plug-in implementation.
  |  |
@@ -49,18 +51,22 @@ For more information on the implementation and usage, visit the wiki pages:
 3. Compatibility
 -------------------------------------------------------------------------------
 
- - .
 
-Developed with Qt SDK 1.2.1.
+
+Developed with Qt 5.5.1.
 
 3.1 Required capabilities
 -------------------------
-
+- Parse server up and running : see [project details](https://github.com/ParsePlatform/parse-server)
 
 3.2 Known issues
 ----------------
 
-None.
+ - The project is currently at a WIP stage, only Parse server is supported as a possible
+backend
+ - qmldir file is to be deployed manually to the plugin folder
+ - for now, only a limited set of feature is supported (authentification mostly)
+
 
 
 4. Building and using the plug-in
@@ -87,15 +93,35 @@ you can use the plug-in in your QML application by doing
 "import BaaS 1.0". Note that the plugin/install directory must be in your
 QML module import path.
 
-Visit the online project documentation and see the examples for more
-information.
+To use Parse server into your QML
+`
 
+	import BaaS 1.0
+
+	Parse{	
+        id:backend
+        hostURI:"PUT HERE YOUR SETTINGS"
+        applicationId:"PUT HERE YOUR SETTINGS"
+        masterKey:"PUT HERE YOUR SETTINGS"
+    }
+    
+    BaaSModel{
+        id: baasmodel
+        client:backend
+        endPoint:"users"
+    }
+    
+    ListView{
+    	model: baasmodel
+    	..
+    }
+    
+`
 
 5. License
 -------------------------------------------------------------------------------
 
-See the license text file delivered with this project. The license file is also
-available online at
+See the license text file delivered with this project. 
 
 
 6. Version history
