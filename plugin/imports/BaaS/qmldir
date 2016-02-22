@@ -1,0 +1,5 @@
+module BaaS
+plugin baasplugin
+typeinfo baas.qmltypes
+classname BaasPlugin
+

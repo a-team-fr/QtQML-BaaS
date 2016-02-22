@@ -1,0 +1,35 @@
+Directories
+
+    doc/
+        Contains documentation on the project in general (not yet actually)
+
+    examples/
+        Contains a set of example applications that utilize the module. (only one sample for now)
+
+    plugin/
+        Contains the QML module.
+
+    tests/
+        Contains a set of tests that are used for testing/debugging the implementation. (not yet actually)
+
+Building
+
+    To build the module, change to the "plugin" directory and command
+
+        qmake && make && make install
+
+    This compiles the module and installs it to plugin/install. After this you can use the
+    module in your QML application by doing "import BaaS 1.0". Notice that you must
+    have the plugin/install directory in your QML module import path. For further usage
+    description see examples/ . FIXME : qmldir must be deployed manually
+
+    For now, only Parse Server is supported as Backend services.
+    see https://github.com/ParsePlatform/parse-server for installation details
+
+Documentation (WIP)
+
+    To generate the documentation, change to the "doc" directory and command
+
+        qdoc *.qdocconf
+
+    This generates the documentation in HTML format in a directory called "html".

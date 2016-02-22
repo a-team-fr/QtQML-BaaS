@@ -1,0 +1,101 @@
+#ifndef BAAS_H
+#define BAAS_H
+#include <QObject>
+
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
+#include <QtNetwork/QNetworkRequest>
+#include <QJsonDocument>
+#include <QJsonValue>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QUrl>
+#include <QUrlQuery>
+#include <QDebug>
+#include <QBuffer>
+
+class BaaS : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY( QString hostURI READ getHostURI  WRITE setHostURI NOTIFY hostChanged)
+    Q_PROPERTY( QString endPoint READ getEndPoint WRITE setEndPoint NOTIFY endPointChanged)
+    Q_PROPERTY( QString error READ getError WRITE setError NOTIFY errorChanged)
+    Q_PROPERTY( qreal percComplete READ getPercComplete WRITE setPercComplete NOTIFY percCompleteChanged)
+    Q_PROPERTY( uint httpCode READ getHttpCode WRITE setHttpCode NOTIFY httpCodeChanged)
+    Q_PROPERTY( QString httpResponse READ getHttpResponse WRITE setHttpResponse NOTIFY httpResponseChanged)
+    Q_PROPERTY( bool ready READ isReady NOTIFY readyChanged)
+
+
+public:
+
+    explicit BaaS(QObject *parent = 0);
+    virtual ~BaaS();
+
+    enum Operation{ GET, POST, PUT, DELETE, PATCH};
+
+    virtual void query(QString endPoint, QUrlQuery extraParams)=0;
+
+public: // property access
+    QString getHostURI() const;
+    void setHostURI(const QString& res);
+    QString getError() const;
+    void setError(const QString& res);
+    QString getEndPoint() const;
+    void setEndPoint(const QString& res);
+    qreal getPercComplete() const;
+    void setPercComplete(qreal res);
+    QString getHttpResponse() const;
+    void setHttpResponse(const QString& res);
+    uint getHttpCode() const;
+    void setHttpCode(uint res);
+    virtual bool isReady() const = 0;
+
+private slots: // common network operations
+    void readReply( QNetworkReply *reply );
+    void replyError(QNetworkReply::NetworkError);
+    void replyProgress(qint64 bytesSent, qint64 bytesTotal);
+
+
+protected:
+
+    QNetworkReply* request( BaaS::Operation operation, QJsonDocument data = QJsonDocument());
+
+    //Use this to manage headers
+    void setRawHeader(QByteArray name, QByteArray value){ rawHeader[name] = value;}
+    void removeRawHeader(QByteArray name){ rawHeader.remove(name);}
+    void resetRawHeader(){ rawHeader.empty();}
+
+    // setExtraHostURI to define Parse server version and/or mount point
+    void setExtraHostURI(QString res){ extraHostURI = res;}
+    bool isLastRequestSuccessful()const{ return lastRequestSuccessful;}
+
+
+signals: // operation notifications
+    void hostChanged();
+    void endPointChanged();
+    void errorChanged();
+    void percCompleteChanged();
+    void httpCodeChanged();
+    void httpResponseChanged();
+    void replyFinished( QJsonDocument);                       //emited when a request gets replied
+    void queryFailed(QJsonDocument );
+    void querySucceeded(QHash<int, QByteArray> roles, QVector<QVariantMap> data);
+    void readyChanged();
+
+private:
+    QNetworkAccessManager *_NAM = nullptr;
+    QMap<QByteArray, QByteArray> rawHeader;
+    QNetworkReply* request( BaaS::Operation operation, QUrl url, QJsonDocument data = QJsonDocument()  );
+    QString hostURI = "";
+    QString extraHostURI = "";
+    QString endPoint = "";
+    QString error = "";
+    qreal percComplete = 100.;
+    bool lastRequestSuccessful = false;
+
+    uint httpCode = 0;
+    QString httpResponse = "";
+};
+
+#endif // BAAS_H
+
