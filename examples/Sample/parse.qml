@@ -24,6 +24,10 @@ ApplicationWindow {
         property alias hostURI: backend.hostURI
         property alias applicationId: backend.applicationId
         property alias masterKey: backend.masterKey
+        property alias height: root.height
+        property alias width: root.width
+        property alias x: root.x
+        property alias y: root.y
     }
 
     toolBar: BorderImage {
@@ -61,13 +65,24 @@ ApplicationWindow {
             height: parent.height
             anchors.verticalCenter: parent.verticalCenter
             color: "white"
-            text: ((stackView.depth > 1) && stackView.currentItem) ? pageModel.get(stackView.currentItem.index).title : "BaaS Sample (using Parse server)"
+            text: (stackView.depth > 1)  ? pageModel.get(stackView.selectedPage).title : "BaaS Sample (using Parse server)"
         }
+
+        SPSButtonText{
+            width : parent.height
+            height: parent.height
+            anchors.right:parent.right
+            text: backend.useMaster ? "Master" : "Normal"
+            enabled: backend.masterKey != ""
+            onClicked: backend.useMaster = !backend.useMaster
+        }
+
     }
 
     Rectangle{
         id:errorMessage
         width: parent.width*0.8; height: parent.height*0.8
+        anchors.centerIn: parent
         radius : 5
         z:2
         opacity : 0.8
@@ -79,8 +94,9 @@ ApplicationWindow {
             if (errorText != "") visible = true;
         }
         TextArea{
-            textColor: "red"
+            textColor: "black"
             anchors.centerIn: parent
+            width: parent.width*0.8; height: parent.height*0.8
             text : backend.error
         }
         MouseArea{
@@ -153,6 +169,18 @@ ApplicationWindow {
             title: "Users"
             page: "content/PageUsers.qml"
         }
+        ListElement {
+            title: "Objects"
+            page: "content/PageObjects.qml"
+        }
+        ListElement {
+            title: "Files"
+            page: "content/PageFiles.qml"
+        }
+        ListElement {
+            title: "Test"
+            page: "content/Test.qml"
+        }
 
     }
 
@@ -165,16 +193,22 @@ ApplicationWindow {
                              stackView.pop();
                              event.accepted = true;
                          }
+        property int selectedPage : -1
 
         initialItem: Item {
             width: parent.width
             height: parent.height
+
             ListView {
+                id : lstMenuLst
                 model: pageModel
                 anchors.fill: parent
                 delegate: DelegateMenuPage {
                     text: title
-                    onClicked: stackView.push(Qt.resolvedUrl(page))
+                    onClicked: {
+                        stackView.selectedPage = index
+                        stackView.push(Qt.resolvedUrl(page))
+                    }
                 }
             }
         }

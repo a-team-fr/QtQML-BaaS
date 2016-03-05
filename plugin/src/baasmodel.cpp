@@ -43,8 +43,31 @@ QVariant BaaSModel::data( const QModelIndex & index, int role ) const
 
 }
 
+void BaaSModel::setBackend(BaaS* be){
+    if (be){
+        //Disconnect
+        if (backend)
+        {
+            disconnect(backend, &BaaS::queryFailed, this, &BaaSModel::onQueryFailed);
+            disconnect(backend, &BaaS::querySucceeded, this, &BaaSModel::onQuerySucceeded);
+        }
+        //Update backend
+        backend = be;
+        //updace connections
+        connect(backend, &BaaS::queryFailed, this, &BaaSModel::onQueryFailed);
+        connect(backend, &BaaS::querySucceeded, this, &BaaSModel::onQuerySucceeded);
+        //and finally query for refreshing model data
+        query();
+    }
+}
+
 void BaaSModel::onQueryFailed(QJsonDocument json)
 {
+    beginResetModel();
+    rows.clear();
+    roles.clear();
+    endResetModel();
+    emit queryDone();
     qDebug() << json.toJson();
 }
 
@@ -59,10 +82,34 @@ void BaaSModel::onQuerySucceeded(QHash<int, QByteArray> _roles, QVector<QVariant
         rows.push_back( BaaSModelItem( elem) );
 
     endResetModel();
+    emit queryDone();
 }
 
 
 void BaaSModel::resetModel()
 {
     query();
+}
+
+void BaaSModel::query()
+{
+
+    if ( !backend || !backend->isReady() || endPoint.isEmpty() )
+        return;
+    QUrlQuery extraParams;
+    if ( !where.isEmpty())
+        extraParams.addQueryItem("where", where);
+    if ( !order.isEmpty())
+        extraParams.addQueryItem("order", order);
+    if ( limit!=0)
+        extraParams.addQueryItem("limit", QString::number(limit));
+    if ( skip!=0)
+        extraParams.addQueryItem("skip", QString::number(skip));
+    if ( !keys.isEmpty())
+        extraParams.addQueryItem("keys", keys);
+    if ( !include.isEmpty())
+        extraParams.addQueryItem("include", include);
+
+
+    backend->query( endPoint, extraParams);
 }

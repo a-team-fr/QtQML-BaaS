@@ -8,6 +8,7 @@ FocusScope {
     property alias backgroundColor : embRect.color
     property alias echoMode : embTextInput.echoMode
     property alias validator : embTextInput.validator
+    property alias inputMask : embTextInput.inputMask
     property alias horizontalAlignment : embTextInput.horizontalAlignment
     property alias verticalAlignment : embTextInput.verticalAlignment
     property alias radius : embRect.radius
@@ -48,24 +49,28 @@ FocusScope {
         TextInput{
             id:embTextInput
             text: ""
-            maximumLength: 25
+            //maximumLength: 50
 
             anchors.leftMargin: 0.5*parent.radius
             anchors.left: embImage.right
             anchors.right: embRect.right
             anchors.top: embRect.top
             anchors.bottom: embRect.bottom
-
+            cursorVisible: activeFocus
             //anchors.centerIn: embRect
             verticalAlignment: TextInput.AlignVCenter
             horizontalAlignment: TextInput.AlignHCenter
             //height:parent.height
             //width: parent.width
-            focus: true
             font.pixelSize: 16 * root.scaleFactor
 
             color: "white"
             onEditingFinished: textField.editingFinished();
+            onFocusChanged: {
+                if (focus)
+                    cursorPosition = text.length
+            }
+
             onAccepted: textField.accepted()
             selectionColor : Qt.darker( embRect.color)
             Text {

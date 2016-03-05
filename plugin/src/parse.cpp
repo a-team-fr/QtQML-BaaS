@@ -1,12 +1,22 @@
 #include "parse.h"
+#include <QFile>
+#include <QMimeDatabase>
+
 
 Parse::Parse(): BaaS()
 {
 
     //Defines default headers
     setExtraHostURI("parse");
-    setRawHeader("Accept","application/json");
 
+
+}
+
+void Parse::initHeaders( )
+{
+    setRawHeader("X-Parse-Application-Id",applicationId.toUtf8());
+    setRawHeader("Accept","application/json");
+    setHeader(QNetworkRequest::ContentTypeHeader, "application/Json");
 }
 
 QString Parse::getApplicationId() const
@@ -19,7 +29,6 @@ void Parse::setApplicationId(const QString& res)
     applicationId = res;
     emit applicationIdChanged();
     emit readyChanged();
-    setRawHeader("X-Parse-Application-Id",applicationId.toUtf8());
 }
 
 QString Parse::getMasterKey() const
@@ -63,17 +72,18 @@ void Parse::signup( QString username, QString password )
 
     } );
 
-    request( BaaS::POST, QJsonDocument(obj));
+    initHeaders();
+    request( BaaS::POST, QJsonDocument(obj).toJson());
 }
 
 void Parse::deleteUser( QString objectId)
 {
-    if (!isReady()) return;
+    if (!isReady() || sessionId.isEmpty()) return;
 
     setEndPoint("users/" + objectId );
 
+    initHeaders();
     setRawHeader("X-Parse-Session-Token", sessionId.toUtf8());
-
     request( BaaS::DELETE);
 }
 
@@ -87,6 +97,7 @@ void Parse::login( QString username, QString password )
 
     setEndPoint( "login?" + postData.toString() ); //TODO improve me : not use endpoint to give url encoded params
 
+    initHeaders();
     if (registerInstallationOnLogin)
         setRawHeader("X-Parse-Installation-Id", "1");
 
@@ -106,7 +117,7 @@ void Parse::login( QString username, QString password )
 
     request( BaaS::GET);
 
-    removeRawHeader("X-Parse-Installation-Id");
+
 }
 
 void Parse::logout( )
@@ -122,12 +133,13 @@ void Parse::logout( )
             sessionId = "";
             userId = "";
             userName = "";
-            removeRawHeader("X-Parse-Session-Token");
+
             emit loginChanged();
         }
 
     } );
 
+    initHeaders();
     request( BaaS::POST);
 }
 
@@ -150,7 +162,8 @@ void Parse::passwordReset( QString email)
 
     } );
 
-    request( BaaS::POST, QJsonDocument(obj));
+    initHeaders();
+    request( BaaS::POST, QJsonDocument(obj).toJson() );
 }
 
 void Parse::query(QString endPoint, QUrlQuery extraParams)
@@ -172,34 +185,217 @@ void Parse::query(QString endPoint, QUrlQuery extraParams)
                 Q_ASSERT(json.isObject());
                 QJsonObject obj = json.object();
                 QJsonValue tmp = obj.value("results");
-                Q_ASSERT(tmp.isArray());
-                QJsonArray res = tmp.toArray();
-                for ( QJsonValue elem: res){
-                    if (elem.isObject()){
-                        obj = elem.toObject();
 
-                        //Update roles
-                        QStringList keys = obj.keys();
-                        for (QString roleName : keys )
-                        {
-                            if ( roles.key( roleName.toUtf8(), -1) == -1)
-                                roles[roles.size()] = roleName.toUtf8();
+                if (tmp.isArray()){
+                    QJsonArray res = tmp.toArray();
+                    for ( QJsonValue elem: res){
+                        if (elem.isObject()){
+                            obj = elem.toObject();
+
+                            //Update roles
+                            QStringList keys = obj.keys();
+                            for (QString roleName : keys )
+                            {
+                                if ( roles.key( roleName.toUtf8(), -1) == -1)
+                                    roles[roles.size()] = roleName.toUtf8();
+                            }
+                            //Add values
+                            data.push_back( obj.toVariantMap());
+
+
                         }
-                        //Add values
-                        data.push_back( obj.toVariantMap());
-
-
                     }
-                }
 
-                emit querySucceeded(roles, data);
+                    emit querySucceeded(roles, data);
+                }
+                //else if (tmp.isObject()){
+                    //obj = tmp.toObject();//Update roles
+                else {
+                    QStringList keys = obj.keys();
+                    for (QString roleName : keys )
+                    {
+                        if ( roles.key( roleName.toUtf8(), -1) == -1)
+                            roles[roles.size()] = roleName.toUtf8();
+                    }
+                    //Add values
+                    data.push_back( obj.toVariantMap());
+                    emit querySucceeded(roles, data);
+                }
             }
             else emit queryFailed(json);
 
     } );
 
+    initHeaders();
     request( BaaS::GET);
 
 
 
 }
+
+bool Parse::ensureEndPointHasPrefix(QString prefix)
+{
+    QString endpt = getEndPoint();
+    //if ( endpt.left( prefix.length() ) == prefix )
+    if (endpt.startsWith( prefix ))
+        return true;
+    else{
+        setEndPoint( prefix + "/" + endpt);
+    }
+    return false;
+}
+
+//Objects related
+void Parse::create( QString doc)
+{
+    if (!isReady()) return;
+
+    ensureEndPointHasPrefix("classes");
+
+    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
+        disconnect(m_conn);
+        if ( getHttpCode() == 201 ){
+            currentObject = json.object();
+            emit currentObjectChanged( currentObject);
+        }
+
+    } );
+
+    initHeaders();
+    request( BaaS::POST, doc.toUtf8() );
+}
+
+void Parse::get( QString include)
+{
+    Q_UNUSED(include); //TODO implement include
+
+    if (!isReady()) return;
+
+    ensureEndPointHasPrefix("classes");
+
+    /*
+    QUrlQuery postData;
+    postData.addQueryItem("include", include);
+    if (!include.isEmpty())
+        setEndPoint( "login?" + postData.toString() );
+        */
+
+    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
+        disconnect(m_conn);
+        if ( isLastRequestSuccessful() ) {
+            currentObject = json.object();
+            emit currentObjectChanged( currentObject);
+        }
+    } );
+
+    initHeaders();
+    request( BaaS::GET);
+
+}
+
+void Parse::update(QString doc)
+{
+    if (!isReady()) return;
+
+    ensureEndPointHasPrefix("classes");
+
+    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
+        disconnect(m_conn);
+        if ( isLastRequestSuccessful() ) {
+            currentObject = json.object();
+            emit currentObjectChanged( currentObject);
+        }
+    } );
+
+    initHeaders();
+    request( BaaS::PUT, doc.toUtf8() );
+
+
+}
+
+void Parse::deleteObject(QString doc)
+{
+    if (!isReady()) return;
+
+    ensureEndPointHasPrefix("classes");
+
+    //Get objectId to be deleted
+    QString deletedObjectId = getEndPoint();
+    int found = deletedObjectId.lastIndexOf('/');
+    int length = deletedObjectId.length();
+    deletedObjectId = deletedObjectId.right( length - found -1);
+
+
+    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
+        Q_UNUSED(json);
+        disconnect(m_conn);
+        if ( isLastRequestSuccessful() ) {
+            emit objectDeleted( deletedObjectId );
+
+        }
+    } );
+
+    initHeaders();
+    request( BaaS::DELETE, doc.toUtf8() );
+}
+
+
+void Parse::uploadFile(QUrl url, QString name)
+{
+    QString filePath = url.toLocalFile();
+    if (!isReady() || !QFile::exists(filePath)) return;
+
+    if (name.isEmpty()) name = url.fileName();
+    setEndPoint( "files/"+name);
+
+    QMimeDatabase db;
+    QMimeType mime = db.mimeTypeForFile(filePath);
+
+    QFile file(filePath);
+    if (mime.inherits("text/plain")){
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+            return;
+    }
+    else{
+        if (!file.open(QIODevice::ReadOnly ))
+            return;
+    }
+
+    initHeaders();
+    setHeader(QNetworkRequest::ContentTypeHeader, mime.name().toUtf8());
+
+    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
+        disconnect(m_conn);
+        if ( getHttpCode() == 201 ){
+            currentObject = json.object();
+            emit fileUploaded( currentObject);
+        }
+
+    } );
+
+    request( BaaS::POST, file.readAll() );
+}
+
+
+void Parse::deleteFile(QString fileName)
+{
+    if (!isReady() || getMasterKey().isEmpty()) return;
+
+    setEndPoint( "files/" + fileName);
+
+    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
+        Q_UNUSED(json);
+        disconnect(m_conn);
+        if ( isLastRequestSuccessful() ) {
+            emit objectDeleted( fileName );
+
+        }
+    } );
+
+    initHeaders();
+    setRawHeader("X-Parse-Master-Key", getMasterKey().toUtf8());
+
+    request( BaaS::DELETE );
+
+}
+

@@ -41,6 +41,8 @@ class BaaSModel : public QAbstractListModel
     Q_PROPERTY( uint skip MEMBER skip WRITE setSkip )
     Q_PROPERTY( QString keys MEMBER keys WRITE setKeys )
     Q_PROPERTY( QString include MEMBER include WRITE setInclude )
+    Q_PROPERTY( QStringList rolesList READ lstRoles NOTIFY queryDone)
+
 
 
 
@@ -52,26 +54,25 @@ public:
     Q_INVOKABLE Qt::ItemFlags flags(const QModelIndex &index) const Q_DECL_OVERRIDE ;
     Q_INVOKABLE void resetModel();
 
+    QStringList lstRoles(){
+        QStringList ret;
+        for (QString role : roleNames())
+            ret.append(role);
+        return ret;
+    }
+
+    Q_INVOKABLE QString get(int index, QByteArray roleName){
+        if  ( (index>=0) && (index < rows.size() )){
+            BaaSModelItem item = rows[index];
+            return item.getRole( roleName).toString();
+        }
+        return QString();
+    }
+
     BaaS* getBackend() Q_REQUIRED_RESULT{
         return backend;
     }
-    void setBackend(BaaS* be){
-        if (be){
-            //Disconnect
-            if (backend)
-            {
-                disconnect(backend, &BaaS::queryFailed, this, &BaaSModel::onQueryFailed);
-                disconnect(backend, &BaaS::querySucceeded, this, &BaaSModel::onQuerySucceeded);
-            }
-            //Update backend
-            backend = be;
-            //updace connections
-            connect(backend, &BaaS::queryFailed, this, &BaaSModel::onQueryFailed);
-            connect(backend, &BaaS::querySucceeded, this, &BaaSModel::onQuerySucceeded);
-            //and finally query for refreshing model data
-            query();
-        }
-    }
+    void setBackend(BaaS* be);
 
     void setEndPoint(QString _endPoint){
         endPoint = _endPoint;
@@ -108,33 +109,13 @@ private slots:
 
 signals:
     void backendChanged();
+    void queryDone();
 
 protected:
     QHash<int, QByteArray> roleNames() const Q_DECL_OVERRIDE;
 
 private:
-    void query(){
-
-        if ( !backend || !backend->isReady() || endPoint.isEmpty() )
-            return;
-        QUrlQuery extraParams;
-        if ( !where.isEmpty())
-            extraParams.addQueryItem("where", where);
-        if ( !order.isEmpty())
-            extraParams.addQueryItem("order", order);
-        if ( limit!=0)
-            extraParams.addQueryItem("limit", QString::number(limit));
-        if ( skip!=0)
-            extraParams.addQueryItem("skip", QString::number(skip));
-        if ( !keys.isEmpty())
-            extraParams.addQueryItem("keys", keys);
-        if ( !include.isEmpty())
-            extraParams.addQueryItem("include", include);
-
-
-        backend->query( endPoint, extraParams);
-    }
-
+    void query();
     BaaS* backend = nullptr;
 
 

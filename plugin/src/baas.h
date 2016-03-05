@@ -58,12 +58,17 @@ private slots: // common network operations
 
 protected:
 
-    QNetworkReply* request( BaaS::Operation operation, QJsonDocument data = QJsonDocument());
+    QNetworkReply* request( BaaS::Operation operation, const QByteArray& data = QByteArray());
 
     //Use this to manage headers
-    void setRawHeader(QByteArray name, QByteArray value){ rawHeader[name] = value;}
-    void removeRawHeader(QByteArray name){ rawHeader.remove(name);}
-    void resetRawHeader(){ rawHeader.empty();}
+    void setRawHeader(QByteArray name, QByteArray value){ rawHeaders[name] = value;}
+    void removeRawHeader(QByteArray name){ rawHeaders.remove(name);}
+    void resetRawHeaders(){ rawHeaders.empty();}
+    void setHeader(QNetworkRequest::KnownHeaders name, QByteArray value){ headers[name] = value;}
+    void removeHeader(QNetworkRequest::KnownHeaders name){ headers.remove(name);}
+    void resetHeaders(){ headers.empty();}
+    void initHeaders( ){}
+    void applyAllHeaders( QNetworkRequest&) const;
 
     // setExtraHostURI to define Parse server version and/or mount point
     void setExtraHostURI(QString res){ extraHostURI = res;}
@@ -77,15 +82,16 @@ signals: // operation notifications
     void percCompleteChanged();
     void httpCodeChanged();
     void httpResponseChanged();
-    void replyFinished( QJsonDocument);                       //emited when a request gets replied
-    void queryFailed(QJsonDocument );
+    void replyFinished( QJsonDocument doc);                       //emited when a request gets replied
+    void queryFailed(QJsonDocument doc);
     void querySucceeded(QHash<int, QByteArray> roles, QVector<QVariantMap> data);
     void readyChanged();
 
 private:
     QNetworkAccessManager *_NAM = nullptr;
-    QMap<QByteArray, QByteArray> rawHeader;
-    QNetworkReply* request( BaaS::Operation operation, QUrl url, QJsonDocument data = QJsonDocument()  );
+    QMap<QByteArray, QByteArray> rawHeaders;
+    QMap<QNetworkRequest::KnownHeaders, QByteArray> headers;
+    QNetworkReply* processRequest( BaaS::Operation operation, const QUrl& url , const QByteArray& data);
     QString hostURI = "";
     QString extraHostURI = "";
     QString endPoint = "";

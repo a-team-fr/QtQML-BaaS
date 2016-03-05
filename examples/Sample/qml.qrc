@@ -12,5 +12,11 @@
         <file>controls/SPSProgressBar.qml</file>
         <file>controls/SPSTextField.qml</file>
         <file>controls/SPSButtonText.qml</file>
+        <file>content/Test.qml</file>
+        <file>content/TestListView.qml</file>
+        <file>controls/SPSSectionLabel.qml</file>
+        <file>content/PageObjects.qml</file>
+        <file>controls/SPSJSonTextEdit.qml</file>
+        <file>content/PageFiles.qml</file>
     </qresource>
 </RCC>

@@ -23,9 +23,11 @@ BaaS::~BaaS()
 
 /* -------------------- Property accessors ----------------------------------*/
 void BaaS::setHostURI(const QString& res){
-    hostURI = res;
-    emit hostChanged();
-    emit readyChanged();
+    if (hostURI!= res){
+        hostURI = res;
+        emit hostChanged();
+        emit readyChanged();
+    }
 
 }
 QString BaaS::getHostURI() const{
@@ -39,8 +41,10 @@ QString BaaS::getError() const{
     return error;
 }
 void BaaS::setEndPoint(const QString& res){
-    endPoint = res;
-    emit endPointChanged();
+    if (endPoint!= res){
+        endPoint = res;
+        emit endPointChanged();
+    }
 
 }
 QString BaaS::getEndPoint() const{
@@ -98,7 +102,7 @@ void BaaS::readReply( QNetworkReply *reply )
         }
         reply->deleteLater();
     }
-    qDebug() << "REPLYFINISHED" << json;
+    //qDebug() << "REPLYFINISHED" << json;
     emit replyFinished(json);
 }
 
@@ -119,17 +123,26 @@ void BaaS::replyProgress(qint64 bytesSent, qint64 bytesTotal)
 }
 
 
-QNetworkReply* BaaS::request( BaaS::Operation operation, QUrl url , QJsonDocument data)
+void BaaS::applyAllHeaders( QNetworkRequest& _request) const
+{
+    //Define headers
+    for (auto k : rawHeaders.keys()){
+        //qDebug() << k << ":" << rawHeader.value( k );
+        _request.setRawHeader(k, rawHeaders.value( k ));
+    }
+    for (auto k : headers.keys()){
+        //qDebug() << k << ":" << header.value( k );
+        _request.setHeader(k, headers.value( k ));
+    }
+
+}
+
+QNetworkReply* BaaS::processRequest( BaaS::Operation operation, const QUrl& url , const QByteArray& data)
 {
     QNetworkRequest request;
     request.setUrl( url);
 
-    //Define headers
-    for (auto k : rawHeader.keys()){
-        //qDebug() << k << ":" << rawHeader.value( k );
-        request.setRawHeader(k, rawHeader.value( k ));
-    }
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    applyAllHeaders(request);
 
     //Proceed with request
     QBuffer *buffer;
@@ -140,10 +153,10 @@ QNetworkReply* BaaS::request( BaaS::Operation operation, QUrl url , QJsonDocumen
         reply = _NAM->get(request);
         break;
     case POST:
-        reply = _NAM->post(request, data.toJson());
+        reply = _NAM->post(request, data);
         break;
     case PUT:
-        reply = _NAM->put(request, data.toJson());
+        reply = _NAM->put(request, data);
         break;
     case DELETE:
         reply = _NAM->deleteResource(request);
@@ -151,7 +164,7 @@ QNetworkReply* BaaS::request( BaaS::Operation operation, QUrl url , QJsonDocumen
     case PATCH:
         buffer=new QBuffer();
         buffer->open((QBuffer::ReadWrite));
-        buffer->write(data.toJson());
+        buffer->write(data);
         buffer->seek(0);
         reply = _NAM->sendCustomRequest(request,"PATCH", buffer);
         buffer->close();
@@ -159,9 +172,13 @@ QNetworkReply* BaaS::request( BaaS::Operation operation, QUrl url , QJsonDocumen
     }
     return reply;
 
+    //Empty the header
+    resetHeaders();
+    resetRawHeaders();
+
 }
 
-QNetworkReply* BaaS::request( BaaS::Operation operation, QJsonDocument data )
+QNetworkReply* BaaS::request( BaaS::Operation operation, const QByteArray& data )
 {
     setPercComplete(0);
 
@@ -170,7 +187,7 @@ QNetworkReply* BaaS::request( BaaS::Operation operation, QJsonDocument data )
     qsUrl += endPoint.isEmpty() ? "" : "/" + endPoint;
 
     qDebug() << "Start request - " << operation << "- url:" << qsUrl;
-    QNetworkReply *reply = request(operation, QUrl( qsUrl), data );
+    QNetworkReply *reply = processRequest( operation, QUrl( qsUrl), data );
 
 
     connect(reply, &QNetworkReply::finished, [=](){ this->readReply(reply);} );

@@ -76,10 +76,10 @@ Item {
                id:masterKey
                width:parent.width
                height : parent.itemHeight
-               text: ""
+               text: backend.masterKey
                echoMode: TextInput.Password
                placeholderText: "Fill in your Master key (keep it private)"
-               onEditingFinished: backend.applicationId = text
+               onEditingFinished: backend.masterKey = text
            }
 
 
