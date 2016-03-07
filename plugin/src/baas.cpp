@@ -8,8 +8,8 @@
 */
 
 /* -------------------- Constructor and destructor ----------------------------------*/
-BaaS::BaaS(QObject *parent) :
-    QObject(parent)
+BaaS::BaaS() :
+    QObject()
 {
     _NAM = new QNetworkAccessManager(this);
 

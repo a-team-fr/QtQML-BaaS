@@ -28,7 +28,7 @@ class BaaS : public QObject
 
 public:
 
-    explicit BaaS(QObject *parent = 0);
+    explicit BaaS();
     virtual ~BaaS();
 
     enum Operation{ GET, POST, PUT, DELETE, PATCH};
