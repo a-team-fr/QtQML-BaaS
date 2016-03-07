@@ -119,8 +119,8 @@ private:
     BaaS* backend = nullptr;
 
 
-    QVector<BaaSModelItem> rows = QVector<BaaSModelItem>();
-    QHash<int, QByteArray> roles = QHash<int, QByteArray>();
+    QVector<BaaSModelItem> rows;
+    QHash<int, QByteArray> roles;
 
     QString endPoint = "";
     QString where = "";
