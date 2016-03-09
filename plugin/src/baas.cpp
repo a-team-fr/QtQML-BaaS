@@ -8,8 +8,8 @@
 */
 
 /* -------------------- Constructor and destructor ----------------------------------*/
-BaaS::BaaS(QObject *parent) :
-    QObject(parent)
+BaaS::BaaS() :
+    QObject()
 {
     _NAM = new QNetworkAccessManager(this);
 
@@ -170,12 +170,12 @@ QNetworkReply* BaaS::processRequest( BaaS::Operation operation, const QUrl& url 
         buffer->close();
         break;
     }
-    return reply;
 
     //Empty the header
     resetHeaders();
     resetRawHeaders();
 
+    return reply;
 }
 
 QNetworkReply* BaaS::request( BaaS::Operation operation, const QByteArray& data )
