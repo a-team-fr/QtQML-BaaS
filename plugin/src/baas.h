@@ -18,6 +18,7 @@ class BaaS : public QObject
 {
     Q_OBJECT
     Q_PROPERTY( QString hostURI READ getHostURI  WRITE setHostURI NOTIFY hostChanged)
+    Q_PROPERTY( QString extraHostURI READ getExtraHostURI  WRITE setExtraHostURI NOTIFY hostChanged)
     Q_PROPERTY( QString endPoint READ getEndPoint WRITE setEndPoint NOTIFY endPointChanged)
     Q_PROPERTY( QString error READ getError WRITE setError NOTIFY errorChanged)
     Q_PROPERTY( qreal percComplete READ getPercComplete WRITE setPercComplete NOTIFY percCompleteChanged)
@@ -38,6 +39,8 @@ public:
 public: // property access
     QString getHostURI() const;
     void setHostURI(const QString& res);
+    QString getExtraHostURI() const;
+    void setExtraHostURI(const QString& res);
     QString getError() const;
     void setError(const QString& res);
     QString getEndPoint() const;
@@ -70,8 +73,7 @@ protected:
     void initHeaders( ){}
     void applyAllHeaders( QNetworkRequest&) const;
 
-    // setExtraHostURI to define Parse server version and/or mount point
-    void setExtraHostURI(QString res){ extraHostURI = res;}
+    void setDefaultExtraHostURI(QString res){ extraHostURI = res;}
     bool isLastRequestSuccessful()const{ return lastRequestSuccessful;}
 
 

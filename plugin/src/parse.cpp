@@ -5,11 +5,8 @@
 
 Parse::Parse(): BaaS()
 {
-
     //Defines default headers
-    setExtraHostURI("parse");
-
-
+    setDefaultExtraHostURI("parse");
 }
 
 void Parse::initHeaders( )
