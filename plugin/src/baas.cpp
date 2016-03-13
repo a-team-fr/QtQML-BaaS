@@ -22,17 +22,29 @@ BaaS::~BaaS()
 
 
 /* -------------------- Property accessors ----------------------------------*/
+
 void BaaS::setHostURI(const QString& res){
     if (hostURI!= res){
         hostURI = res;
         emit hostChanged();
         emit readyChanged();
     }
-
 }
 QString BaaS::getHostURI() const{
     return hostURI;
 }
+
+void BaaS::setExtraHostURI(const QString& res){
+    if (extraHostURI!= res){
+        extraHostURI = res;
+        emit hostChanged();
+        emit readyChanged();
+    }
+}
+QString BaaS::getExtraHostURI() const{
+    return extraHostURI;
+}
+
 void BaaS::setError(const QString& res){
     error = res;
     emit errorChanged();
