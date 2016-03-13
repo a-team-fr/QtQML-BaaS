@@ -34,7 +34,7 @@ public:
 
     enum Operation{ GET, POST, PUT, DELETE, PATCH};
 
-    virtual void query(QString endPoint, QUrlQuery extraParams)=0;
+    virtual QNetworkReply *query(QString endPoint, QUrlQuery extraParams)=0;
 
 public: // property access
     QString getHostURI() const;

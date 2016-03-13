@@ -163,9 +163,9 @@ void Parse::passwordReset( QString email)
     request( BaaS::POST, QJsonDocument(obj).toJson() );
 }
 
-void Parse::query(QString endPoint, QUrlQuery extraParams)
+QNetworkReply *Parse::query(QString endPoint, QUrlQuery extraParams)
 {
-    if (!isReady()) return;
+    if (!isReady()) return NULL;
 
     if (extraParams.isEmpty())
         setEndPoint( endPoint);
@@ -224,9 +224,7 @@ void Parse::query(QString endPoint, QUrlQuery extraParams)
     } );
 
     initHeaders();
-    request( BaaS::GET);
-
-
+    return request( BaaS::GET);
 
 }
 
@@ -243,9 +241,9 @@ bool Parse::ensureEndPointHasPrefix(QString prefix)
 }
 
 //Objects related
-void Parse::create( QString doc)
+QNetworkReply* Parse::create( QString doc)
 {
-    if (!isReady()) return;
+    if (!isReady()) return NULL;
 
     ensureEndPointHasPrefix("classes");
 
@@ -259,14 +257,14 @@ void Parse::create( QString doc)
     } );
 
     initHeaders();
-    request( BaaS::POST, doc.toUtf8() );
+    return request( BaaS::POST, doc.toUtf8() );
 }
 
-void Parse::get( QString include)
+QNetworkReply* Parse::get( QString include)
 {
     Q_UNUSED(include); //TODO implement include
 
-    if (!isReady()) return;
+    if (!isReady()) return NULL;
 
     ensureEndPointHasPrefix("classes");
 
@@ -286,13 +284,13 @@ void Parse::get( QString include)
     } );
 
     initHeaders();
-    request( BaaS::GET);
+    return request( BaaS::GET);
 
 }
 
-void Parse::update(QString doc)
+QNetworkReply* Parse::update(QString doc)
 {
-    if (!isReady()) return;
+    if (!isReady()) return NULL;
 
     ensureEndPointHasPrefix("classes");
 
@@ -305,14 +303,13 @@ void Parse::update(QString doc)
     } );
 
     initHeaders();
-    request( BaaS::PUT, doc.toUtf8() );
-
+    return request( BaaS::PUT, doc.toUtf8() );
 
 }
 
-void Parse::deleteObject(QString doc)
+QNetworkReply* Parse::deleteObject(QString doc)
 {
-    if (!isReady()) return;
+    if (!isReady()) return NULL;
 
     ensureEndPointHasPrefix("classes");
 
@@ -333,14 +330,14 @@ void Parse::deleteObject(QString doc)
     } );
 
     initHeaders();
-    request( BaaS::DELETE, doc.toUtf8() );
+    return request( BaaS::DELETE, doc.toUtf8() );
 }
 
 
-void Parse::uploadFile(QUrl url, QString name)
+QNetworkReply* Parse::uploadFile(QUrl url, QString name)
 {
     QString filePath = url.toLocalFile();
-    if (!isReady() || !QFile::exists(filePath)) return;
+    if (!isReady() || !QFile::exists(filePath)) return NULL;
 
     if (name.isEmpty()) name = url.fileName();
     setEndPoint( "files/"+name);
@@ -351,11 +348,11 @@ void Parse::uploadFile(QUrl url, QString name)
     QFile file(filePath);
     if (mime.inherits("text/plain")){
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-            return;
+            return NULL;
     }
     else{
         if (!file.open(QIODevice::ReadOnly ))
-            return;
+            return NULL;
     }
 
     initHeaders();
@@ -370,13 +367,13 @@ void Parse::uploadFile(QUrl url, QString name)
 
     } );
 
-    request( BaaS::POST, file.readAll() );
+    return request( BaaS::POST, file.readAll() );
 }
 
 
-void Parse::deleteFile(QString fileName)
+QNetworkReply* Parse::deleteFile(QString fileName)
 {
-    if (!isReady() || getMasterKey().isEmpty()) return;
+    if (!isReady() || getMasterKey().isEmpty()) return NULL;
 
     setEndPoint( "files/" + fileName);
 
@@ -392,7 +389,7 @@ void Parse::deleteFile(QString fileName)
     initHeaders();
     setRawHeader("X-Parse-Master-Key", getMasterKey().toUtf8());
 
-    request( BaaS::DELETE );
+    return request( BaaS::DELETE );
 
 }
 

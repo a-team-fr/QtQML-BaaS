@@ -23,19 +23,19 @@ public:
     Q_INVOKABLE void passwordReset(QString email);
 
     //Objects related
-    Q_INVOKABLE void create( QString doc);
-    Q_INVOKABLE void get( QString include = "");
-    Q_INVOKABLE void update(QString doc);
-    Q_INVOKABLE void deleteObject(QString doc = "");
+    Q_INVOKABLE QNetworkReply *create( QString doc);
+    Q_INVOKABLE QNetworkReply *get( QString include = "");
+    Q_INVOKABLE QNetworkReply *update(QString doc);
+    Q_INVOKABLE QNetworkReply *deleteObject(QString doc = "");
 
     Q_INVOKABLE bool ensureEndPointHasPrefix(QString prefix);
 
     //Files related
-    Q_INVOKABLE void uploadFile(QUrl url, QString name = QString());
-    Q_INVOKABLE void deleteFile(QString fileName);
+    Q_INVOKABLE QNetworkReply *uploadFile(QUrl url, QString name = QString());
+    Q_INVOKABLE QNetworkReply *deleteFile(QString fileName);
 
     //Query - this is used by the BaasModel
-    virtual void query(QString endPoint, QUrlQuery extraParams)  Q_DECL_OVERRIDE;
+    virtual QNetworkReply *query(QString endPoint, QUrlQuery extraParams)  Q_DECL_OVERRIDE;
 
 
 public: // property access
