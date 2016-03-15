@@ -61,14 +61,14 @@ void BaaSModel::setBackend(BaaS* be){
     }
 }
 
-void BaaSModel::onQueryFailed(QJsonDocument json)
+void BaaSModel::onQueryFailed(QString msg)
 {
     beginResetModel();
     rows.clear();
     roles.clear();
     endResetModel();
     emit queryDone();
-    qDebug() << json.toJson();
+    qDebug() << msg;
 }
 
 void BaaSModel::onQuerySucceeded(QHash<int, QByteArray> _roles, QVector<QVariantMap> _data)

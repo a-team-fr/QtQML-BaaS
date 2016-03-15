@@ -84,9 +84,9 @@ signals: // operation notifications
     void percCompleteChanged();
     void httpCodeChanged();
     void httpResponseChanged();
-    void replyFinished( QJsonDocument doc);                       //emited when a request gets replied
-    void queryFailed(QJsonDocument doc);
-    void querySucceeded(QHash<int, QByteArray> roles, QVector<QVariantMap> data);
+    void replyFinished(QJsonDocument doc, QNetworkReply *reply);                       //emited when a request gets replied
+    void queryFailed(QString msg);
+    void querySucceeded(QHash<int, QByteArray> roles, QVector<QVariantMap> data, QNetworkReply *reply);
     void readyChanged();
 
 private:

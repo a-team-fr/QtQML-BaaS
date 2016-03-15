@@ -115,7 +115,7 @@ void BaaS::readReply( QNetworkReply *reply )
         reply->deleteLater();
     }
     //qDebug() << "REPLYFINISHED" << json;
-    emit replyFinished(json);
+    emit replyFinished(json, reply);
 }
 
 
