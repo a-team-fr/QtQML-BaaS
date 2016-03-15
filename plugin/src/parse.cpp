@@ -168,11 +168,12 @@ QNetworkReply *Parse::query(QString endPoint, QUrlQuery extraParams)
     if (!isReady()) return NULL;
 
     if (extraParams.isEmpty())
-        setEndPoint( endPoint);
+        setEndPoint(endPoint);
     else setEndPoint( endPoint + "?" + extraParams.toString() ); //TODO improve me : not use endpoint to give url encoded params
 
+    ensureEndPointHasPrefix("classes");
 
-    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
+    m_conn = connect(this, &BaaS::replyFinished, [=](QJsonDocument json, QNetworkReply *reply){
         disconnect(m_conn);
         if (isLastRequestSuccessful()){
                 //structure to return from parse
@@ -203,7 +204,7 @@ QNetworkReply *Parse::query(QString endPoint, QUrlQuery extraParams)
                         }
                     }
 
-                    emit querySucceeded(roles, data);
+                    emit querySucceeded(roles, data, reply);
                 }
                 //else if (tmp.isObject()){
                     //obj = tmp.toObject();//Update roles
@@ -216,11 +217,9 @@ QNetworkReply *Parse::query(QString endPoint, QUrlQuery extraParams)
                     }
                     //Add values
                     data.push_back( obj.toVariantMap());
-                    emit querySucceeded(roles, data);
+                    emit querySucceeded(roles, data, reply);
                 }
-            }
-            else emit queryFailed(json);
-
+        }
     } );
 
     initHeaders();

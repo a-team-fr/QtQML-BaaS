@@ -104,7 +104,7 @@ public:
     }
 
 private slots:
-    void onQueryFailed(QJsonDocument json);
+    void onQueryFailed(QString msg);
     void onQuerySucceeded(QHash<int, QByteArray> roles, QVector<QVariantMap> data);
 
 signals:
