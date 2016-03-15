@@ -219,9 +219,7 @@ QNetworkReply *Parse::query(QString endPoint, QUrlQuery extraParams)
                     data.push_back( obj.toVariantMap());
                     emit querySucceeded(roles, data, reply);
                 }
-            }
-            else emit queryFailed(getError());
-
+        }
     } );
 
     initHeaders();
