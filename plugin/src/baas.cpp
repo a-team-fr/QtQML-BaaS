@@ -126,7 +126,7 @@ void BaaS::replyError(QNetworkReply::NetworkError)
     setHttpCode( reply->error() );
     setError(reply->errorString());
     qDebug() << "REPLY ERROR" << reply->errorString();
-
+    emit queryFailed(getError());
 }
 
 void BaaS::replyProgress(qint64 bytesSent, qint64 bytesTotal)
