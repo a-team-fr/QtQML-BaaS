@@ -241,9 +241,12 @@ bool Parse::ensureEndPointHasPrefix(QString prefix)
 }
 
 //Objects related
-QNetworkReply* Parse::create( QString doc)
+void Parse::create(QString doc)
 {
-    if (!isReady()) return NULL;
+    if (!isReady()) {
+        m_createQueue.append(doc);
+        return;
+    }
 
     ensureEndPointHasPrefix("classes");
 
@@ -251,13 +254,19 @@ QNetworkReply* Parse::create( QString doc)
         disconnect(m_conn);
         if ( getHttpCode() == 201 ){
             currentObject = json.object();
-            emit currentObjectChanged( currentObject);
+            emit currentObjectChanged(currentObject);
+            if(!m_createQueue.isEmpty()) {
+                create(m_createQueue.takeFirst());
+            }
         }
-
+        else {
+            // error, drop the queue
+            m_createQueue.empty();
+        }
     } );
 
     initHeaders();
-    return request( BaaS::POST, doc.toUtf8() );
+    request( BaaS::POST, doc.toUtf8() );
 }
 
 QNetworkReply* Parse::get( QString include)
@@ -288,9 +297,12 @@ QNetworkReply* Parse::get( QString include)
 
 }
 
-QNetworkReply* Parse::update(QString doc)
+void Parse::update(QString doc)
 {
-    if (!isReady()) return NULL;
+    if (!isReady()) {
+        m_updateQueue.append(doc);
+        return;
+    }
 
     ensureEndPointHasPrefix("classes");
 
@@ -298,18 +310,28 @@ QNetworkReply* Parse::update(QString doc)
         disconnect(m_conn);
         if ( isLastRequestSuccessful() ) {
             currentObject = json.object();
-            emit currentObjectChanged( currentObject);
+            emit currentObjectChanged(currentObject);
+            if(!m_updateQueue.isEmpty()) {
+                update(m_updateQueue.takeFirst());
+            }
+        }
+        else {
+            // error, drop the queue
+            m_updateQueue.empty();
         }
     } );
 
     initHeaders();
-    return request( BaaS::PUT, doc.toUtf8() );
+    request( BaaS::PUT, doc.toUtf8() );
 
 }
 
-QNetworkReply* Parse::deleteObject(QString doc)
+void Parse::deleteObject(QString doc)
 {
-    if (!isReady()) return NULL;
+    if (!isReady()) {
+        m_deleteQueue.append(doc);
+        return;
+    }
 
     ensureEndPointHasPrefix("classes");
 
@@ -325,12 +347,18 @@ QNetworkReply* Parse::deleteObject(QString doc)
         disconnect(m_conn);
         if ( isLastRequestSuccessful() ) {
             emit objectDeleted( deletedObjectId );
-
+            if(!m_deleteQueue.isEmpty()) {
+                deleteObject(m_deleteQueue.takeFirst());
+            }
+        }
+        else {
+            // error, drop the queue
+            m_deleteQueue.empty();
         }
     } );
 
     initHeaders();
-    return request( BaaS::DELETE, doc.toUtf8() );
+    request( BaaS::DELETE, doc.toUtf8() );
 }
 
 

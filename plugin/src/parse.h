@@ -23,10 +23,10 @@ public:
     Q_INVOKABLE void passwordReset(QString email);
 
     //Objects related
-    Q_INVOKABLE QNetworkReply *create( QString doc);
+    Q_INVOKABLE void create(QString doc);
     Q_INVOKABLE QNetworkReply *get( QString include = "");
-    Q_INVOKABLE QNetworkReply *update(QString doc);
-    Q_INVOKABLE QNetworkReply *deleteObject(QString doc = "");
+    Q_INVOKABLE void update(QString doc);
+    Q_INVOKABLE void deleteObject(QString doc = "");
 
     Q_INVOKABLE bool ensureEndPointHasPrefix(QString prefix);
 
@@ -81,6 +81,10 @@ private:
     QMetaObject::Connection m_conn;             //temporary use for terminating connection with lambda
     bool registerInstallationOnLogin = false;
     bool useMaster = false;
+
+    QList<QString> m_createQueue;
+    QList<QString> m_updateQueue;
+    QList<QString> m_deleteQueue;
 };
 
 #endif // PARSE_H
