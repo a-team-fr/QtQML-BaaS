@@ -179,6 +179,7 @@ QNetworkReply* BaaS::processRequest( BaaS::Operation operation, const QUrl& url 
         buffer->write(data);
         buffer->seek(0);
         reply = _NAM->sendCustomRequest(request,"PATCH", buffer);
+        buffer->setParent(reply);
         buffer->close();
         break;
     }
