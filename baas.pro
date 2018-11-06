@@ -1,4 +1,7 @@
 TEMPLATE = subdirs
+
 SUBDIRS += plugin \
-    examples/Sample
+    BaasExample
 OTHER_FILES = README
+
+

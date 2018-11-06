@@ -3,50 +3,51 @@
 #include <QMimeDatabase>
 
 
-Parse::Parse(): BaaS()
+
+Parse::Parse(): BaasBase ()
 {
     //Defines default headers
-    setDefaultExtraHostURI("parse");
+    setExtraHostURI("parse");
 }
 
-void Parse::initHeaders( )
+void Parse::initHeaders( bool sendSessionToken )
 {
-    setRawHeader("X-Parse-Application-Id",applicationId.toUtf8());
+
+    //apply
+    setRawHeader("X-Parse-Application-Id",m_applicationId.toUtf8());
     setRawHeader("Accept","application/json");
+    setRawHeader("X-Parse-REST-API-Key",m_restKey.toUtf8());
+    if (sendSessionToken && !m_sessionId.isEmpty())
+        setRawHeader("X-Parse-Session-Token", m_sessionId.toUtf8());
+    if (m_useMaster && !m_masterKey.isEmpty()){
+        setRawHeader("X-Parse-Master-Key", m_masterKey.toUtf8());
+    }
+    else removeRawHeader("X-Parse-Master-Key");
+
     setHeader(QNetworkRequest::ContentTypeHeader, "application/Json");
 }
 
-QString Parse::getApplicationId() const
+bool Parse::readErrorFromResponse(int &error, QString &message)
 {
-    return applicationId;
-}
 
-void Parse::setApplicationId(const QString& res)
-{
-    applicationId = res;
-    emit applicationIdChanged();
-    emit readyChanged();
-}
+    if ( !httpResponse().isObject() ) return false;
 
-QString Parse::getMasterKey() const
-{
-    return masterKey;
-}
+    QJsonObject obj = httpResponse().object();
 
-bool Parse::isReady() const
-{
-    return ( (!applicationId.isEmpty()) && (!getHostURI().isEmpty()) && (getPercComplete()==100) );
+    QJsonValue val = obj.value("code");
+    if (val.isUndefined() ) return false;
+    error = val.toInt();
+
+    val = obj.value("error");
+    if (val.isUndefined() ) return false;
+    message = val.toString();
+
+    return true;
 }
 
 
-void Parse::setMasterKey(const QString& res)
-{
-    masterKey = res;
-    emit masterKeyChanged();
-}
 
-
-void Parse::signup( QString username, QString password )
+void Parse::registerUser( QString username, QString password )
 {
     if (!isReady()) return;
 
@@ -57,87 +58,124 @@ void Parse::signup( QString username, QString password )
       {"password", password}
     };
 
-    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
-        disconnect(m_conn);
-        if ( getHttpCode() == 201 ){
-            QJsonObject obj = json.object();
-            sessionId = obj.value("sessionToken").toString();
-            userId = obj.value("objectId").toString();
+
+    conn = connect(this, &RestManager::finished, [&, username](){
+        disconnect(conn);
+        if ( httpCode() == 201 ){
+            QJsonObject obj = httpResponse().object();
             qDebug() << "objectId" << obj.value("objectId").toString();
-            qDebug() << "sessionToken" << sessionId;
+            qDebug() << "sessionToken" << m_sessionId;
+            emit operationSuccess( BaasOperation::userRegister, username);
         }
+        else processError() ;
 
     } );
 
     initHeaders();
-    request( BaaS::POST, QJsonDocument(obj).toJson());
+    setRawHeader("X-Parse-Revocable-Session","1");
+    request( QNetworkAccessManager::PostOperation, QJsonDocument(obj).toJson());
 }
 
 void Parse::deleteUser( QString objectId)
 {
-    if (!isReady() || sessionId.isEmpty()) return;
+    if (!isReady() || m_sessionId.isEmpty()) return;
+
+
+    conn = connect(this, &RestManager::finished, [&, objectId ](){
+        disconnect(conn);
+        if ( namError() ) processError() ;
+        else emit operationSuccess( BaasOperation::userDelete, objectId);
+    } );
 
     setEndPoint("users/" + objectId );
 
-    initHeaders();
-    setRawHeader("X-Parse-Session-Token", sessionId.toUtf8());
-    request( BaaS::DELETE);
+    initHeaders(true);
+    request( QNetworkAccessManager::DeleteOperation);
 }
 
-void Parse::login( QString username, QString password )
+void Parse::signIn( QString username, QString password )
 {
+    qDebug() << "login Parse";
     if (!isReady()) return;
 
     QUrlQuery postData;
     postData.addQueryItem("username", username);
     postData.addQueryItem("password", password);
 
-    setEndPoint( "login?" + postData.toString() ); //TODO improve me : not use endpoint to give url encoded params
+    setEndPoint( "login?" + postData.toString() );
 
     initHeaders();
+    setRawHeader("X-Parse-Revocable-Session","1");
     if (registerInstallationOnLogin)
         setRawHeader("X-Parse-Installation-Id", "1");
 
-    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
-        disconnect(m_conn);
-        if ( isLastRequestSuccessful() ) { //getHttpCode() == 201 ){
-            QJsonObject obj = json.object();
-            sessionId = obj.value("sessionToken").toString();
-            userId = obj.value("objectId").toString();
-            userName = obj.value("username").toString();
+    conn = connect(this, &RestManager::finished, [&, username](){
+        if ( !disconnect(conn) ) qDebug() << "can't disconnect";
+        if ( !namError() )
+        {
+            QJsonObject obj = httpResponse().object();
+            m_sessionId = obj.value("sessionToken").toString();
+            m_userId = obj.value("objectId").toString();
+            m_userName = obj.value("username").toString();
             qDebug() << "objectId" << obj.value("objectId").toString();
-            qDebug() << "sessionToken" << sessionId;
+            qDebug() << "sessionToken" << m_sessionId;
             emit loginChanged();
+            emit operationSuccess( BaasOperation::userSignIn, username);
         }
+        else processError() ;
 
     } );
 
-    request( BaaS::GET);
+    request( QNetworkAccessManager::GetOperation);
 
 
 }
 
-void Parse::logout( )
+void Parse::signOut( )
 {
     if (!isReady()) return;
 
     setEndPoint("logout");
 
-    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
-        disconnect(m_conn);
-        Q_UNUSED(json);
-        if ( isLastRequestSuccessful() ) {
-            sessionId = "";
-            userId = "";
-            userName = "";
+
+    QString savedUserName = m_userName;
+    conn = connect(this, &RestManager::finished, [&, savedUserName]( ){
+        disconnect(conn);
+        Q_UNUSED(httpResponse());
+        if ( !namError() ) {
+            emit operationSuccess( BaasOperation::userSignOut, savedUserName);
+            m_sessionId = "";
+            m_userId = "";
+            m_userName = "";
 
             emit loginChanged();
-        }
+        }else processError() ;
 
     } );
 
     initHeaders();
-    request( BaaS::POST);
+    request( QNetworkAccessManager::PostOperation);
+}
+
+void Parse::verifyEmail(QString email)
+{
+    if (!isReady() || email.isEmpty() ) return;
+
+    setEndPoint("verificationEmailRequest");
+
+    QJsonObject obj{
+      {"email", email}
+    };
+
+
+    conn = connect(this, &RestManager::finished, [&, email]( ){
+        disconnect(conn);
+        if ( namError() ) processError() ;
+        else emit operationSuccess( BaasOperation::verifyEmail, email);
+    } );
+
+    initHeaders();
+    request( QNetworkAccessManager::PostOperation, QJsonDocument(obj).toJson() );
 }
 
 void Parse::passwordReset( QString email)
@@ -150,221 +188,159 @@ void Parse::passwordReset( QString email)
       {"email", email}
     };
 
-    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
-        disconnect(m_conn);
-        Q_UNUSED(json);
-        if ( isLastRequestSuccessful() ) {
 
-        }
-
+    conn = connect(this, &RestManager::finished, [&, email]( ){
+        disconnect(conn);
+        if ( namError() ) processError() ;
+        else emit operationSuccess( BaasOperation::passwordReset, email);
     } );
 
     initHeaders();
-    request( BaaS::POST, QJsonDocument(obj).toJson() );
+    request( QNetworkAccessManager::PostOperation, QJsonDocument(obj).toJson() );
 }
 
-QNetworkReply *Parse::query(QString endPoint, QUrlQuery extraParams)
+void Parse::updateCurrentUser(QJsonDocument me)
 {
-    if (!isReady()) return NULL;
+    if (!isReady() || m_userId.isEmpty() ) return;
 
-    if (extraParams.isEmpty())
-        setEndPoint(endPoint);
-    else setEndPoint( endPoint + "?" + extraParams.toString() ); //TODO improve me : not use endpoint to give url encoded params
-
-    ensureEndPointHasPrefix("classes");
-
-    m_conn = connect(this, &BaaS::replyFinished, [=](QJsonDocument json, QNetworkReply *reply){
-        disconnect(m_conn);
-        if (isLastRequestSuccessful()){
-                //structure to return from parse
-                QHash<int, QByteArray> roles = QHash<int, QByteArray>();
-                QVector<QVariantMap> data = QVector<QVariantMap>();
-
-                Q_ASSERT(json.isObject());
-                QJsonObject obj = json.object();
-                QJsonValue tmp = obj.value("results");
-
-                if (tmp.isArray()){
-                    QJsonArray res = tmp.toArray();
-                    for ( QJsonValue elem: res){
-                        if (elem.isObject()){
-                            obj = elem.toObject();
-
-                            //Update roles
-                            QStringList keys = obj.keys();
-                            for (QString roleName : keys )
-                            {
-                                if ( roles.key( roleName.toUtf8(), -1) == -1)
-                                    roles[roles.size()] = roleName.toUtf8();
-                            }
-                            //Add values
-                            data.push_back( obj.toVariantMap());
+    setEndPoint("users/"+m_userId);
 
 
-                        }
-                    }
-
-                    emit querySucceeded(roles, data, reply);
-                }
-                //else if (tmp.isObject()){
-                    //obj = tmp.toObject();//Update roles
-                else {
-                    QStringList keys = obj.keys();
-                    for (QString roleName : keys )
-                    {
-                        if ( roles.key( roleName.toUtf8(), -1) == -1)
-                            roles[roles.size()] = roleName.toUtf8();
-                    }
-                    //Add values
-                    data.push_back( obj.toVariantMap());
-                    emit querySucceeded(roles, data, reply);
-                }
-        }
+    conn = connect(this, &RestManager::finished, [=]( ){
+        disconnect(conn);
+        if ( namError() ) processError() ;
+        else emit operationSuccess( BaasOperation::userUpdate,m_userId);
     } );
 
-    initHeaders();
-    return request( BaaS::GET);
-
+    initHeaders(true);
+    request( QNetworkAccessManager::PutOperation, me.toJson() );
 }
 
-bool Parse::ensureEndPointHasPrefix(QString prefix)
+void Parse::currentUser()
 {
-    QString endpt = getEndPoint();
-    //if ( endpt.left( prefix.length() ) == prefix )
-    if (endpt.startsWith( prefix ))
-        return true;
-    else{
-        setEndPoint( prefix + "/" + endpt);
-    }
-    return false;
+    if (!isReady()) return;
+
+
+    setEndPoint("users/me");
+
+
+    conn = connect(this, &RestManager::finished, [=]( ){
+        disconnect(conn);
+        if ( namError() ) processError();
+        else emit operationSuccess( BaasOperation::userMe);
+    } );
+
+    initHeaders(true);
+    request( QNetworkAccessManager::GetOperation);
+
+
 }
 
+
+
+
+
+/////////////////////
 //Objects related
-void Parse::create(QString doc)
+
+void Parse::createObject(QString doc)
 {
-    if (!isReady()) {
-        m_createQueue.append(doc);
-        return;
-    }
+    if (!isReady()) return;
 
     ensureEndPointHasPrefix("classes");
 
-    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
-        disconnect(m_conn);
-        if ( getHttpCode() == 201 ){
-            currentObject = json.object();
-            emit currentObjectChanged(currentObject);
-            if(!m_createQueue.isEmpty()) {
-                create(m_createQueue.takeFirst());
-            }
+
+    conn = connect(this, &RestManager::finished, [=](){
+        disconnect(conn);
+        if ( httpCode() == 201 ){
+            emit currentObjectChanged(httpResponse().object());
+            emit operationSuccess( BaasOperation::objectCreate);
         }
-        else {
-            // error, drop the queue
-            m_createQueue.empty();
-        }
+        else processError();
     } );
 
     initHeaders();
-    request( BaaS::POST, doc.toUtf8() );
+    request( QNetworkAccessManager::PostOperation, doc.toUtf8() );
 }
 
-QNetworkReply* Parse::get( QString include)
+void Parse::getObject( QString include)
 {
     Q_UNUSED(include); //TODO implement include
 
-    if (!isReady()) return NULL;
+    if (!isReady()) return;
 
     ensureEndPointHasPrefix("classes");
 
-    /*
-    QUrlQuery postData;
-    postData.addQueryItem("include", include);
-    if (!include.isEmpty())
-        setEndPoint( "login?" + postData.toString() );
-        */
 
-    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
-        disconnect(m_conn);
-        if ( isLastRequestSuccessful() ) {
-            currentObject = json.object();
-            emit currentObjectChanged( currentObject);
+    conn = connect(this, &RestManager::finished, [=](){
+        disconnect(conn);
+        if ( !namError() ) {
+            emit currentObjectChanged( httpResponse().object());
+            emit operationSuccess( BaasOperation::objectGet);
         }
+        else processError();
     } );
 
     initHeaders();
-    return request( BaaS::GET);
+    request( QNetworkAccessManager::GetOperation);
 
 }
 
-void Parse::update(QString doc)
+void Parse::updateObject(QString doc)
 {
-    if (!isReady()) {
-        m_updateQueue.append(doc);
-        return;
-    }
+    if (!isReady()) return;
 
     ensureEndPointHasPrefix("classes");
 
-    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
-        disconnect(m_conn);
-        if ( isLastRequestSuccessful() ) {
-            currentObject = json.object();
-            emit currentObjectChanged(currentObject);
-            if(!m_updateQueue.isEmpty()) {
-                update(m_updateQueue.takeFirst());
-            }
+
+    conn = connect(this, &RestManager::finished, [=]( ){
+        disconnect(conn);
+        if ( !namError() ) {
+            emit currentObjectChanged( httpResponse().object() );
+            emit operationSuccess( BaasOperation::objectDelete);
         }
-        else {
-            // error, drop the queue
-            m_updateQueue.empty();
-        }
+        else processError();
     } );
 
     initHeaders();
-    request( BaaS::PUT, doc.toUtf8() );
+    request( QNetworkAccessManager::PutOperation, doc.toUtf8() );
 
 }
 
 void Parse::deleteObject(QString doc)
 {
-    if (!isReady()) {
-        m_deleteQueue.append(doc);
-        return;
-    }
+    if (!isReady()) return;
 
     ensureEndPointHasPrefix("classes");
 
     //Get objectId to be deleted
-    QString deletedObjectId = getEndPoint();
+    QString deletedObjectId = endPoint();
     int found = deletedObjectId.lastIndexOf('/');
     int length = deletedObjectId.length();
     deletedObjectId = deletedObjectId.right( length - found -1);
 
 
-    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
-        Q_UNUSED(json);
-        disconnect(m_conn);
-        if ( isLastRequestSuccessful() ) {
+
+    conn = connect(this, &RestManager::finished, [=]( ){
+        disconnect(conn);
+        if ( !namError() ) {
             emit objectDeleted( deletedObjectId );
-            if(!m_deleteQueue.isEmpty()) {
-                deleteObject(m_deleteQueue.takeFirst());
-            }
+            emit operationSuccess( BaasOperation::objectDelete);
         }
-        else {
-            // error, drop the queue
-            m_deleteQueue.empty();
-        }
+        else processError();
     } );
 
     initHeaders();
-    request( BaaS::DELETE, doc.toUtf8() );
+    request( QNetworkAccessManager::DeleteOperation, doc.toUtf8() );
 }
 
 
-QNetworkReply* Parse::uploadFile(QUrl url, QString name)
+
+
+void Parse::uploadFile(QUrl url, QString name)
 {
     QString filePath = url.toLocalFile();
-    if (!isReady() || !QFile::exists(filePath)) return NULL;
+    if (!isReady() || !QFile::exists(filePath)) return;
 
     if (name.isEmpty()) name = url.fileName();
     setEndPoint( "files/"+name);
@@ -373,50 +349,47 @@ QNetworkReply* Parse::uploadFile(QUrl url, QString name)
     QMimeType mime = db.mimeTypeForFile(filePath);
 
     QFile file(filePath);
-    if (mime.inherits("text/plain")){
-        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-            return NULL;
-    }
-    else{
-        if (!file.open(QIODevice::ReadOnly ))
-            return NULL;
-    }
+    if ( (mime.inherits("text/plain")) && (!file.open(QIODevice::ReadOnly | QIODevice::Text)) ) return;
+    else if (!file.open(QIODevice::ReadOnly )) return;
 
     initHeaders();
     setHeader(QNetworkRequest::ContentTypeHeader, mime.name().toUtf8());
 
-    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
-        disconnect(m_conn);
-        if ( getHttpCode() == 201 ){
-            currentObject = json.object();
-            emit fileUploaded( currentObject);
+
+    conn = connect(this, &RestManager::finished, [=]( ){
+        disconnect(conn);
+        if ( httpCode() == 201 ){
+            emit fileUploaded( httpResponse().object());
+            emit operationSuccess( BaasOperation::fileUpload);
         }
+        else processError();
 
     } );
 
-    return request( BaaS::POST, file.readAll() );
+    request( QNetworkAccessManager::PostOperation, file.readAll() );
 }
 
 
-QNetworkReply* Parse::deleteFile(QString fileName)
+void Parse::deleteFile(QString fileName)
 {
-    if (!isReady() || getMasterKey().isEmpty()) return NULL;
+    if (!isReady() || masterKey().isEmpty()) return;
 
     setEndPoint( "files/" + fileName);
 
-    m_conn = connect(this, &BaaS::replyFinished, [=]( QJsonDocument json){
-        Q_UNUSED(json);
-        disconnect(m_conn);
-        if ( isLastRequestSuccessful() ) {
-            emit objectDeleted( fileName );
 
+    conn = connect(this, &RestManager::finished, [=]( ){
+        disconnect(conn);
+        if ( !namError() ) {
+            emit objectDeleted( fileName );
+            emit operationSuccess( BaasOperation::fileDelete);
         }
+        else processError();
     } );
 
     initHeaders();
-    setRawHeader("X-Parse-Master-Key", getMasterKey().toUtf8());
+    setRawHeader("X-Parse-Master-Key", masterKey().toUtf8());
 
-    return request( BaaS::DELETE );
+    request( QNetworkAccessManager::DeleteOperation );
 
 }
 

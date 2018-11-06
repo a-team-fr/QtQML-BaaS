@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QAbstractListModel>
-#include "baas.h"
+#include "baasbase.h"
 
 class BaaSModelItem
 {
@@ -33,14 +33,15 @@ class BaaSModel : public QAbstractListModel
 {
     Q_OBJECT
 
-    Q_PROPERTY( BaaS* client READ getBackend  WRITE setBackend NOTIFY backendChanged)
-    Q_PROPERTY( QString endPoint MEMBER endPoint WRITE setEndPoint )
-    Q_PROPERTY( QString where MEMBER where WRITE setWhere )
-    Q_PROPERTY( QString order MEMBER order WRITE setOrder )
-    Q_PROPERTY( uint limit MEMBER limit WRITE setLimit )
-    Q_PROPERTY( uint skip MEMBER skip WRITE setSkip )
-    Q_PROPERTY( QString keys MEMBER keys WRITE setKeys )
-    Q_PROPERTY( QString include MEMBER include WRITE setInclude )
+    Q_PROPERTY( BaasBase* source READ backend  WRITE setBackend NOTIFY backendChanged)
+    Q_PROPERTY( QString endPoint MEMBER m_endPoint WRITE setEndPoint )
+    Q_PROPERTY( QString prefix MEMBER m_prefix WRITE setPrefix )
+    Q_PROPERTY( QString where MEMBER m_where WRITE setWhere )
+    Q_PROPERTY( QString order MEMBER m_order WRITE setOrder )
+    Q_PROPERTY( uint limit MEMBER m_limit WRITE setLimit )
+    Q_PROPERTY( uint skip MEMBER m_skip WRITE setSkip )
+    Q_PROPERTY( QString keys MEMBER m_keys WRITE setKeys )
+    Q_PROPERTY( QString include MEMBER m_include WRITE setInclude )
     Q_PROPERTY( QStringList rolesList READ lstRoles NOTIFY queryDone)
 
 
@@ -49,9 +50,9 @@ class BaaSModel : public QAbstractListModel
 public:
     BaaSModel();
 
-    int rowCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
-    QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const Q_DECL_OVERRIDE;
-    Q_INVOKABLE Qt::ItemFlags flags(const QModelIndex &index) const Q_DECL_OVERRIDE ;
+    int rowCount(const QModelIndex & parent = QModelIndex()) const override;
+    QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const override;
+    Q_INVOKABLE Qt::ItemFlags flags(const QModelIndex &index) const override ;
     Q_INVOKABLE void resetModel();
 
     QStringList lstRoles(){
@@ -62,73 +63,77 @@ public:
     }
 
     Q_INVOKABLE QString get(int index, QByteArray roleName){
-        if  ( (index>=0) && (index < rows.size() )){
-            BaaSModelItem item = rows[index];
+        if  ( (index>=0) && (index < m_rows.size() )){
+            BaaSModelItem item = m_rows[index];
             return item.getRole( roleName).toString();
         }
         return QString();
     }
 
-    BaaS* getBackend() Q_REQUIRED_RESULT{
-        return backend;
-    }
-    void setBackend(BaaS* be);
+    Q_INVOKABLE void reload();
+
+    BaasBase* backend() { return m_backend;}
+    void setBackend(BaasBase*);
 
     void setEndPoint(QString _endPoint){
-        endPoint = _endPoint;
-        query();
+        m_endPoint = _endPoint;
+        reload();
+    }
+    void setPrefix(QString _prefix){
+        m_prefix = _prefix;
+        reload();
     }
     void setWhere(QString _where){
-        where = _where;
-        query();
+        m_where = _where;
+        reload();
     }
     void setOrder(QString _order){
-        order = _order;
-        query();
+        m_order = _order;
+        reload();
     }
     void setLimit(uint _limit){
-        limit = _limit;
-        query();
+        m_limit = _limit;
+        reload();
     }
     void setSkip(uint _skip){
-        skip = _skip;
-        query();
+        m_skip = _skip;
+        reload();
     }
     void setKeys(QString _keys){
-        keys = _keys;
-        query();
+        m_keys = _keys;
+        reload();
     }
     void setInclude(QString _include){
-        include = _include;
-        query();
+        m_include = _include;
+        reload();
     }
 
 private slots:
-    void onQueryFailed(QString msg);
-    void onQuerySucceeded(QHash<int, QByteArray> roles, QVector<QVariantMap> data);
+    void onQuerySucceeded(const QHash<int, QByteArray>&, const QVector<QVariantMap>&);
 
 signals:
     void backendChanged();
     void queryDone();
 
 protected:
-    QHash<int, QByteArray> roleNames() const Q_DECL_OVERRIDE;
+    QHash<int, QByteArray> roleNames() const override;
 
 private:
-    void query();
-    BaaS* backend = nullptr;
+
+    BaasBase* m_backend = nullptr;
 
 
-    QVector<BaaSModelItem> rows;
-    QHash<int, QByteArray> roles;
+    QVector<BaaSModelItem> m_rows;
+    QHash<int, QByteArray> m_roles;
 
-    QString endPoint = "";
-    QString where = "";
-    QString order = "";
-    uint limit = 0;
-    uint skip = 0;
-    QString keys = "";
-    QString include = "";
+    QString m_endPoint = "";
+    QString m_prefix = "";
+    QString m_where = "";
+    QString m_order = "";
+    uint m_limit = 0;
+    uint m_skip = 0;
+    QString m_keys = "";
+    QString m_include = "";
 
 
 };

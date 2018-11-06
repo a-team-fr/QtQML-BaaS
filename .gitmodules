@@ -1,0 +1,3 @@
+[submodule "AdminConsole/fontawesome.pri"]
+	path = AdminConsole/fontawesome.pri
+	url = https://github.com/benlau/fontawesome.pri.git

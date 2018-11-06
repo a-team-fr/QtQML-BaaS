@@ -1,6 +1,0 @@
-module BaaS
-BaaSListView 1.0 BaaSListView.qml
-plugin baasplugin
-typeinfo baas.qmltypes
-classname BaasPlugin
-

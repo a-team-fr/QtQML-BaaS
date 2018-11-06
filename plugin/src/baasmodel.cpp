@@ -7,7 +7,7 @@ BaaSModel::BaaSModel()
 
 QHash<int, QByteArray> BaaSModel::roleNames() const
 {
-    return roles;
+    return m_roles;
 }
 
 Qt::ItemFlags BaaSModel::flags(const QModelIndex &index) const
@@ -20,7 +20,7 @@ Qt::ItemFlags BaaSModel::flags(const QModelIndex &index) const
 int BaaSModel::rowCount(const QModelIndex & parent) const
 {
     Q_UNUSED(parent);
-    return rows.size();
+    return m_rows.size();
 }
 
 QVariant BaaSModel::data( const QModelIndex & index, int role ) const
@@ -28,7 +28,7 @@ QVariant BaaSModel::data( const QModelIndex & index, int role ) const
     int row = index.row();
     //role -= (Qt::UserRole + 1);
 
-    if ( (role < 0) || (role >= roles.size()) )
+    if ( (role < 0) || (role >= m_roles.size()) )
         return QVariant();
 
     if ( (row < 0) || (row >= rowCount()) )
@@ -39,47 +39,47 @@ QVariant BaaSModel::data( const QModelIndex & index, int role ) const
     BaaSModelItem item = rows[row];
     QVariant ret = item.getRole(roleNames);
     return ret;*/
-    return rows[ row].getRole( roles[role] );
+    return m_rows[ row].getRole( m_roles[role] );
 
 }
 
-void BaaSModel::setBackend(BaaS* be){
+void BaaSModel::setBackend(BaasBase* be){
     if (be){
         //Disconnect
-        if (backend)
+        if (m_backend)
         {
-            disconnect(backend, &BaaS::queryFailed, this, &BaaSModel::onQueryFailed);
-            disconnect(backend, &BaaS::querySucceeded, this, &BaaSModel::onQuerySucceeded);
+            //disconnect(backend, &RestManager::finished, this, &BaaSModel::onFinished);
+            disconnect(m_backend, &BaasBase::querySucceeded, this, &BaaSModel::onQuerySucceeded);
         }
         //Update backend
-        backend = be;
+        m_backend = be;
         //updace connections
-        connect(backend, &BaaS::queryFailed, this, &BaaSModel::onQueryFailed);
-        connect(backend, &BaaS::querySucceeded, this, &BaaSModel::onQuerySucceeded);
+        //connect(backend, &RestManager::finished, this, &BaaSModel::onFinished);
+        connect(m_backend, &BaasBase::querySucceeded, this, &BaaSModel::onQuerySucceeded);
         //and finally query for refreshing model data
-        query();
+        reload();
     }
 }
 
-void BaaSModel::onQueryFailed(QString msg)
+//void BaaSModel::onQueryFailed(QString msg)
+//{
+//    beginResetModel();
+//    rows.clear();
+//    roles.clear();
+//    endResetModel();
+//    emit queryDone();
+//    qDebug() << msg;
+//}
+
+void BaaSModel::onQuerySucceeded(const QHash<int, QByteArray>& _roles, const QVector<QVariantMap>& _data)
 {
     beginResetModel();
-    rows.clear();
-    roles.clear();
-    endResetModel();
-    emit queryDone();
-    qDebug() << msg;
-}
+    m_rows.clear();
+    m_roles.clear();
 
-void BaaSModel::onQuerySucceeded(QHash<int, QByteArray> _roles, QVector<QVariantMap> _data)
-{
-    beginResetModel();
-    rows.clear();
-    roles.clear();
-
-    roles= _roles;
+    m_roles= _roles;
     for (auto elem : _data)
-        rows.push_back( BaaSModelItem( elem) );
+        m_rows.push_back( BaaSModelItem( elem) );
 
     endResetModel();
     emit queryDone();
@@ -88,28 +88,30 @@ void BaaSModel::onQuerySucceeded(QHash<int, QByteArray> _roles, QVector<QVariant
 
 void BaaSModel::resetModel()
 {
-    query();
+    reload();
 }
 
-void BaaSModel::query()
+void BaaSModel::reload()
 {
 
-    if ( !backend || !backend->isReady() || endPoint.isEmpty() )
+    if ( !m_backend || !m_backend->isReady() || m_endPoint.isEmpty() )
         return;
     QUrlQuery extraParams;
-    if ( !where.isEmpty())
-        extraParams.addQueryItem("where", where);
-    if ( !order.isEmpty())
-        extraParams.addQueryItem("order", order);
-    if ( limit!=0)
-        extraParams.addQueryItem("limit", QString::number(limit));
-    if ( skip!=0)
-        extraParams.addQueryItem("skip", QString::number(skip));
-    if ( !keys.isEmpty())
-        extraParams.addQueryItem("keys", keys);
-    if ( !include.isEmpty())
-        extraParams.addQueryItem("include", include);
+    if ( !m_where.isEmpty())
+        extraParams.addQueryItem("where", m_where);
+    if ( !m_order.isEmpty())
+        extraParams.addQueryItem("order", m_order);
+    if ( m_limit!=0)
+        extraParams.addQueryItem("limit", QString::number(m_limit));
+    if ( m_skip!=0)
+        extraParams.addQueryItem("skip", QString::number(m_skip));
+    if ( !m_keys.isEmpty())
+        extraParams.addQueryItem("keys", m_keys);
+    if ( !m_include.isEmpty())
+        extraParams.addQueryItem("include", m_include);
 
-
-    backend->query( endPoint, extraParams);
+    if (m_prefix.isEmpty())
+        m_backend->query( m_endPoint, extraParams);
+    else m_backend->query( m_endPoint, extraParams, m_prefix);
 }
+
