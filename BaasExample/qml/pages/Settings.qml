@@ -6,54 +6,59 @@ import "../component"
 
 
 Flickable {
-    contentHeight: content.childrenRect.height
+    anchors.fill: parent
     contentWidth : width
-    ColumnLayout{
+    contentHeight: content.childrenRect.height
+    Column{
         id:content
         width:parent.width * 0.9
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.margins: 5
 
         GroupBox{
             title:"Parse server configuration"
             width:parent.width
             Layout.alignment: Qt.AlignHCenter
 
-            ColumnLayout{
+            Column{
                 anchors.fill : parent
                 anchors.margins: 5
+                spacing : 5
                 TextField{
                     text: Assets.backend.hostURI
-                    Layout.fillWidth: true
+                    width:parent.width
                     placeholderText: qsTr("Fill in your backend host url")
                     onEditingFinished: Assets.backend.hostURI = text
+                    ToolTip.text : qsTr("Backend host url")
+                    ToolTip.visible:hovered
                 }
                 TextField{
                     text: Assets.backend.applicationId
-                    Layout.fillWidth: true
+                    width:parent.width
                     placeholderText: qsTr("Fill in your application ID")
                     onEditingFinished: Assets.backend.applicationId = text
+                    ToolTip.text : qsTr("Application Id")
+                    ToolTip.visible:hovered
                 }
                 TextField{
                     text: Assets.backend.masterKey
-                    Layout.fillWidth: true
+                    width:parent.width
                     echoMode: TextInput.Password
                     placeholderText: qsTr("Fill in your Master key (keep it private)")
                     onEditingFinished: Assets.backend.masterKey = text
+                    ToolTip.text : qsTr("Master key")
+                    ToolTip.visible:hovered
                 }
                 TextField{
                     text: Assets.backend.restKey
-                    Layout.fillWidth: true
+                    width:parent.width
                     echoMode: TextInput.Password
                     placeholderText: qsTr("Fill in your REST key")
                     onEditingFinished: Assets.backend.restKey = text
+                    ToolTip.text : qsTr("Rest key")
+                    ToolTip.visible:hovered
                 }
             }
         }
-
-
-        LayoutSpring{}
-
 
     }
 }

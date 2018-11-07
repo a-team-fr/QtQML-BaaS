@@ -29,13 +29,11 @@ Flickable {
     ColumnLayout
     {
         id:content
-        width : root.width
-
-
+        spacing : 5
 
         GroupBox{
             title:qsTr("Users list")
-            //Layout.alignment : Qt.AlignHCenter
+            Layout.fillWidth: true
             ATTableView{
                 id:lstUsers
                 model: baasmodel
@@ -49,6 +47,7 @@ Flickable {
         GroupBox{
             title:qsTr( "e-mail adapter" )
             width : root.width
+            Layout.fillWidth: true
             ColumnLayout{
                 anchors.fill : parent
                 RowLayout{
@@ -56,7 +55,7 @@ Flickable {
                     TextField{
                         id:email
                         placeholderText: qsTr("fill in email to check")
-
+                        Layout.fillWidth: true
                     }
                     Button{
                         text:"verify email"

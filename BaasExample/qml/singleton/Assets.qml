@@ -52,7 +52,7 @@ Item {
         property var lstPages:ListModel{
             id:lstPages
             ListElement{
-                label:qsTr("BaaS console")
+                label:qsTr("Readme")
                 url:"qrc:/qml/pages/Home.qml"
                 iconTxt:"\uf015"//FontAwesome.home
             }
@@ -88,7 +88,7 @@ Item {
                 iconTxt:"\uf02d"//FontAwesome.book
             }
         }
-        property int curPageIndex : 5
+        property int curPageIndex : 0
         property var curPage : lstPages.get( curPageIndex )
         readonly property string homePage : "qrc:/qml/pages/Home.qml"
 

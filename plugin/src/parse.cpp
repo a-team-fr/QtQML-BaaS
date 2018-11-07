@@ -359,8 +359,8 @@ void Parse::uploadFile(QUrl url, QString name)
     conn = connect(this, &RestManager::finished, [=]( ){
         disconnect(conn);
         if ( httpCode() == 201 ){
-            emit fileUploaded( httpResponse().object());
             emit operationSuccess( BaasOperation::fileUpload);
+            emit fileUploaded( httpResponse().object());
         }
         else processError();
 
@@ -380,14 +380,14 @@ void Parse::deleteFile(QString fileName)
     conn = connect(this, &RestManager::finished, [=]( ){
         disconnect(conn);
         if ( !namError() ) {
-            emit objectDeleted( fileName );
             emit operationSuccess( BaasOperation::fileDelete);
+            emit objectDeleted( fileName );
         }
         else processError();
     } );
 
     initHeaders();
-    setRawHeader("X-Parse-Master-Key", masterKey().toUtf8());
+    //setRawHeader("X-Parse-Master-Key", masterKey().toUtf8());
 
     request( QNetworkAccessManager::DeleteOperation );
 

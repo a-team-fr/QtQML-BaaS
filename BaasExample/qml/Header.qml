@@ -13,7 +13,7 @@ ToolBar{
     //Material.foreground: "white"
 
     RowLayout{
-        spacing: 10
+        spacing: 5
         anchors.fill: parent
 
         ToolButton{

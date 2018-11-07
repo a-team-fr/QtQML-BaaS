@@ -57,9 +57,11 @@ ApplicationWindow {
 
     Loader{
         id:loader
-        anchors.top : serverWait.bottom
-        anchors.fill:parent
+        anchors.top : parent.top
+        anchors.bottom:parent.bottom
+        anchors.topMargin: serverWait.height
         anchors.bottomMargin: backendSuccessMessage.height
+        width:parent.width
         source:Assets.nav.curPage ? Assets.nav.curPage.url : null
 
     }
@@ -67,7 +69,7 @@ ApplicationWindow {
     {
         id:backendSuccessMessage
         parent : ApplicationWindow.window.contentItem
-        y:loader.height
+        y:loader.height + 25
         width:ApplicationWindow.window.width
         height:20
         text:Assets.backend.successMessage
@@ -75,7 +77,7 @@ ApplicationWindow {
     NotificationPopup
     {
         parent : ApplicationWindow.window.contentItem
-        y:loader.height
+        y:loader.height + 25
         backgroundColor:"red"
         width:ApplicationWindow.window.width
         height:20

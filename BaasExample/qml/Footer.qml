@@ -26,7 +26,7 @@ ToolBar{
         Row{
             height: 25
             width: parent.width
-
+            spacing : 3
             AwesomeButton{
                 height : parent.height
                 width:height

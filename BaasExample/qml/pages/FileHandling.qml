@@ -10,8 +10,9 @@ import "../component"
 
 Flickable {
     anchors.fill:parent
+    anchors.margins : 10
     contentHeight: content.childrenRect.height
-    contentWidth : width
+    contentWidth : content.childrenRect.width
 
     BaaSModel{
         id: baasmodel
@@ -23,10 +24,10 @@ Flickable {
         target: Assets.backend
         onFileUploaded:{
             //Associate with object
-            var obj = {
-                        "url": currentObject.url,
+            var obj = {"name": currentObject.name,
                         "file": {
                             "name": currentObject.name,
+                            "url": currentObject.url,
                             "__type": "File"
                             }
                         }
@@ -38,17 +39,15 @@ Flickable {
 
     ColumnLayout{
        id:content
-       width: parent.width
-       spacing: 2
+       spacing: 5
 
        GroupBox{
-           width:parent.width
+           Layout.fillWidth: true
            title:qsTr("Upload file ")
            ColumnLayout{
-               anchors.fill: parent
-               anchors.margins : 5
+               Layout.fillWidth: true
                RowLayout{
-                   width:parent.width
+                   Layout.fillWidth: true
                    height : 30
                    TextField{
                        id: filePath
@@ -76,10 +75,8 @@ Flickable {
 
        GroupBox{
            title:qsTr("File list - click on a row to display as image")
-           width:parent.width
+           Layout.fillWidth: true
            ColumnLayout{
-               anchors.fill: parent
-               anchors.margins : 5
 
                ATTableView{
                    model: baasmodel
