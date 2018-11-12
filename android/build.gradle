@@ -1,0 +1,71 @@
+buildscript {
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.1.0'
+        //classpath 'com.google.gms:google-services:4.2.0' //gradle not compiling !
+        classpath 'com.google.gms:google-services:4.0.1'
+    }
+
+}
+
+allprojects {
+    repositories {
+        maven { url 'https://jitpack.io' }
+        jcenter()
+        google()
+    }
+
+}
+
+apply plugin: 'com.android.application'
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    //compile 'com.google.android.gms:play-services-base:15.0.1' //from QtFireBase
+    //compile 'com.google.firebase:firebase-core:16.0.4'
+    //compile 'com.google.android.gms:play-services-gcm:16.0.0'
+    compile 'com.google.firebase:firebase-messaging:17.3.4'
+    implementation "com.github.parse-community.Parse-SDK-Android:parse:1.18.5"
+    implementation "com.github.parse-community.Parse-SDK-Android:fcm:1.18.5"
+}
+
+android {
+    /*******************************************************
+     * The following variables:
+     * - androidBuildToolsVersion,
+     * - androidCompileSdkVersion
+     * - qt5AndroidDir - holds the path to qt android files
+     *                   needed to build any Qt application
+     *                   on Android.
+     *
+     * are defined in gradle.properties file. This file is
+     * updated by QtCreator and androiddeployqt tools.
+     * Changing them manually might break the compilation!
+     *******************************************************/
+
+    compileSdkVersion androidCompileSdkVersion.toInteger()
+
+    buildToolsVersion androidBuildToolsVersion
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = [qt5AndroidDir + '/src', 'src', 'java']
+            aidl.srcDirs = [qt5AndroidDir + '/src', 'src', 'aidl']
+            res.srcDirs = [qt5AndroidDir + '/res', 'res']
+            resources.srcDirs = ['src']
+            renderscript.srcDirs = ['src']
+            assets.srcDirs = ['assets']
+            jniLibs.srcDirs = ['libs']
+       }
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+}
+
+apply plugin: 'com.google.gms.google-services'

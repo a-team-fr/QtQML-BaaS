@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>qtquickcontrols2.conf</file>
+        <file>qml/pages/Home.qml</file>
+        <file>qml/pages/Login.qml</file>
+        <file>qml/singleton/Assets.qml</file>
+        <file>qml/component/ATText.qml</file>
+        <file>qml/Footer.qml</file>
+        <file>qml/Header.qml</file>
+        <file>qml/LeftDrawer.qml</file>
+        <file>qml/pages/Settings.qml</file>
+        <file>qml/component/LayoutSpring.qml</file>
+        <file>qml/component/AwesomeButton.qml</file>
+        <file>qml/component/Toast.qml</file>
+        <file>qml/pages/Objects.qml</file>
+        <file>qml/component/ATTableView.qml</file>
+        <file>qml/pages/Users.qml</file>
+        <file>qml/component/NotificationPopup.qml</file>
+        <file>qml/pages/Me.qml</file>
+        <file>qml/pages/FileHandling.qml</file>
+    </qresource>
+</RCC>
