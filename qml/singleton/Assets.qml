@@ -12,6 +12,7 @@ Item {
         property alias applicationId: backend.applicationId
         property alias masterKey: backend.masterKey
         property alias restKey: backend.restKey
+        property alias extraHostURI : backend.extraHostURI
     }
 
     property var ui:QtObject{
@@ -81,9 +82,9 @@ Item {
         id:backend
         //Default values to have a quickly working configuration for evaluation
         //please use your own parse server instance credentials
-        hostURI: "https://qtbaassample.herokuapp.com"
-        applicationId: "fr.ateam.qtbaassample"
-        restKey: "restsecure"
+        hostURI: "https://parseapi.back4app.com"
+        applicationId: "Mom8WK3Pu2cNh2csSQEfi9IxQhs8qBIDVYWQuP46"
+        restKey: "aA12Y45mnzuG8hIHFqlns7XUS0y8GFGPsUtznc9V"
     }
 
 

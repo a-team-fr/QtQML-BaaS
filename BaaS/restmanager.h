@@ -13,11 +13,13 @@
 #include <QUrlQuery>
 #include <QDebug>
 #include <QBuffer>
-
+#include <QNetworkConfigurationManager>
 
 class RestManager : public QObject
 {
     Q_OBJECT
+
+    Q_PROPERTY( bool online READ online NOTIFY onlineChanged)
     Q_PROPERTY( QString hostURI READ hostURI  WRITE setHostURI NOTIFY hostChanged)
     Q_PROPERTY( QString extraHostURI READ extraHostURI  WRITE setExtraHostURI NOTIFY hostChanged)
     Q_PROPERTY( QString endPoint READ endPoint WRITE setEndPoint NOTIFY endPointChanged)
@@ -32,16 +34,33 @@ class RestManager : public QObject
 
 signals: // operation notifications
     void hostChanged();
+    void onlineChanged(bool);
     void endPointChanged();
     void readyChanged();
     void percCompleteChanged();
     void beforeFinished();                  //emited when a request gets replied
     void finished();                       //emited when a request gets replied and fully processed
 
-public: // property access
+public:
+    RestManager( QObject* _parent = nullptr );
+    // property access
     void setHostURI(const QString& res);
     void setExtraHostURI(const QString& res);
     void setEndPoint(const QString& res);
+    bool online() const{
+        //return m_NCM.isOnline();
+        QList<QNetworkConfiguration> activeConfigs = m_NCM.allConfigurations(QNetworkConfiguration::Active);
+         if (activeConfigs.count() > 0)
+         {
+             QNetworkConfiguration cfg = activeConfigs.first();
+             qDebug() << QString("Family %1, Type %2, Name %3").arg(cfg.bearerTypeFamily()).arg(cfg.name()).arg(cfg.bearerTypeName());
+             Q_ASSERT(m_NCM.isOnline());
+             return true;
+         }
+         else
+             return false;
+
+    }
     QString errorText() const{return m_NAMerrorText;}
     qreal percComplete() const{return m_percComplete;}
     int httpCode() const{return m_httpCode;}
@@ -81,6 +100,7 @@ protected:
 
 private:
     QNetworkAccessManager m_NAM;
+    QNetworkConfigurationManager m_NCM;
     QMap<QByteArray, QByteArray> m_rawHeaders;
     QMap<QNetworkRequest::KnownHeaders, QByteArray> m_headers;
     QString m_hostURI {};

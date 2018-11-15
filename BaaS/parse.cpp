@@ -7,7 +7,7 @@
 Parse::Parse(): BaasBase ()
 {
     //Defines default headers
-    setExtraHostURI("parse");
+    //setExtraHostURI("parse");
 }
 
 void Parse::initHeaders( bool sendSessionToken )

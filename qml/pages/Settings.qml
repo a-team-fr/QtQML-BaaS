@@ -42,6 +42,16 @@ Flickable {
                     inputMethodHints: Qt.ImhNoAutoUppercase
                 }
                 TextField{
+                    text: Assets.backend.extraHostURI
+                    width:parent.width
+                    placeholderText: qsTr("Mount path ('parse' or leave empty) ")
+                    onEditingFinished: Assets.backend.extraHostURI = text
+                    ToolTip.text : qsTr("Mount path ('parse' or leave empty)")
+                    ToolTip.visible:hovered
+                    inputMethodHints: Qt.ImhNoAutoUppercase
+                }
+
+                TextField{
                     text: Assets.backend.masterKey
                     width:parent.width
                     echoMode: TextInput.Password

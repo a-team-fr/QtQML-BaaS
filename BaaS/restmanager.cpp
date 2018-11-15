@@ -13,6 +13,14 @@ void RestManager::setPercComplete(qreal res){
     emit percCompleteChanged();
 
 }
+
+RestManager::RestManager(QObject* _parent) : QObject(_parent)
+{
+    connect(&m_NCM, &QNetworkConfigurationManager::onlineStateChanged, this, &RestManager::onlineChanged);
+    m_NCM.updateConfigurations();
+
+}
+
 void RestManager::setHostURI(const QString& res){
     if (m_hostURI!= res){
         m_hostURI = res;

@@ -24,7 +24,7 @@ ToolBar{
         anchors.fill : parent
 
         Row{
-            height: 25
+            height: 30
             width: parent.width
             spacing : 3
             AwesomeButton{
@@ -50,7 +50,7 @@ ToolBar{
             }
 
             ATText{
-                width:parent.width-75
+                width:parent.width-4*parent.height - 4
                 height : parent.height
                 text : Assets.backend.userName ? Assets.backend.userName : qsTr("Not connected")
                 horizontalAlignment: Text.AlignLeft
@@ -61,6 +61,11 @@ ToolBar{
                     onClicked:Assets.backend.signIn("charby","Krutagor44") //TODO : only for easing dev : to be removed!!!!
                     //onClicked: Assets.nav.selectPage(2) //go to auth
                 }
+            }
+            AwesomeButton{
+                height : parent.height
+                width:height
+                iconTxt: Assets.backend.online ? FontAwesome.link : FontAwesome.unlink
             }
 
         }
